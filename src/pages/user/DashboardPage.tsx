@@ -10,7 +10,7 @@ type EventWithMeta = EventRow & { registration_count: number; save_count: number
 
 export const DashboardPage = () => {
   const { profile } = useAuth();
-  const [now] = useState(() => Date.now());
+ 
   const [events, setEvents] = useState<EventWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
