@@ -18,6 +18,7 @@ export const EventDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
+
   const load = async () => {
     if (!id || !user) return;
     setLoading(true);
@@ -42,10 +43,11 @@ export const EventDetailsPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user?.id]);
 
-  const soldOut = !!event && seatsTaken >= event.max_seats;
-
+ // Inside EventDetailsPage, above the onRegister function
+const hasPassed = !!event && new Date(getEventEnd(event)).getTime() < Date.now();
+const soldOut = !!event && seatsTaken >= event.max_seats;
   const onRegister = async () => {
-    if (!event || !user || soldOut || registration) return;
+    if (!event || !user || soldOut || registration || processing || hasPassed) return;
     setProcessing(true);
 
     const payment_status = event.is_paid ? 'paid' : 'pending';
@@ -121,9 +123,20 @@ export const EventDetailsPage = () => {
           </div>
         )}
         <div className="mt-4 flex flex-wrap gap-2">
-          <button disabled={soldOut || !!registration || processing} onClick={() => void onRegister()} className="rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400 disabled:opacity-60">
-            {registration ? 'Registered' : event.is_paid ? 'Buy Ticket' : 'Register'}
-          </button>
+         <button 
+    disabled={soldOut || !!registration || processing || hasPassed} 
+    onClick={() => void onRegister()} 
+    className="rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400 disabled:opacity-60"
+  >
+    {registration 
+      ? 'Registered' 
+      : hasPassed 
+        ? 'Event Ended' 
+        : event.is_paid 
+          ? 'Buy Ticket' 
+          : 'Register'
+    }
+  </button> {/* Make sure this closing tag is also there */}
           <button onClick={() => void toggleSave()} className="rounded-xl border border-slate-700 px-4 py-2 text-sm hover:border-slate-500">
             {saved ? 'Unsave Event' : 'Save Event'}
           </button>

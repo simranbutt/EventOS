@@ -55,6 +55,7 @@ export const AdminEventFormPage = () => {
   const [form, setForm] = useState<FormState>(initial);
   const [sessions, setSessions] = useState<SessionForm[]>([initialSession()]);
   const [loading, setLoading] = useState(false);
+  const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     const load = async () => {
@@ -149,6 +150,14 @@ export const AdminEventFormPage = () => {
       alert('Please fill date, start time, and end time for each session.');
       return;
     }
+
+    const pastDateSession = normalized.find(s => s.session_date < today);
+if (pastDateSession) {
+  alert('Event sessions cannot be scheduled for past dates.');
+  return;
+}
+
+ 
 
     const invalidRange = normalized.find((s) => combineSessionDateTime(s.session_date, s.end_time) <= combineSessionDateTime(s.session_date, s.start_time));
     if (invalidRange) {

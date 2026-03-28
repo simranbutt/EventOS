@@ -20,6 +20,8 @@ export const DashboardPage = () => {
   const [nearby, setNearby] = useState<EventWithMeta[]>([]);
   const [nearbyOnly, setNearbyOnly] = useState(false);
   const [geoError, setGeoError] = useState('');
+  const nowTime = Date.now();
+  const oneWeekAgo = nowTime - 7 * 24 * 60 * 60 * 1000;
 
   const load = async () => {
     setLoading(true);
@@ -59,16 +61,26 @@ export const DashboardPage = () => {
     [events, search, city, category, date],
   );
 
-  const upcoming = filtered.filter((e) => new Date(getEventStart(e)).getTime() >= now).slice(0, 6);
-  const trending = [...filtered]
-    .filter((e) => e.registration_count > 0)
-    .sort((a, b) => b.registration_count - a.registration_count)
-    .slice(0, 6);
+  const upcoming = filtered
+  .filter((e) => new Date(getEventStart(e)).getTime() >= nowTime)
+  .slice(0, 6);
+
+const trending = [...filtered]
+  .filter((e) => e.registration_count > 0 && new Date(getEventStart(e)).getTime() >= nowTime) // Only future
+  .sort((a, b) => b.registration_count - a.registration_count)
+  .slice(0, 6);
   const interests = profile?.interests ?? [];
   const recommended = [...filtered]
-    .filter((e) => interests.includes(e.category))
-    .sort((a, b) => b.save_count - a.save_count)
-    .slice(0, 6);
+  .filter((e) => interests.includes(e.category) && new Date(getEventStart(e)).getTime() >= nowTime) // Only future
+  .sort((a, b) => b.save_count - a.save_count)
+  .slice(0, 6);
+
+  const recentlyHappened = filtered
+  .filter((e) => {
+    const startTime = new Date(getEventStart(e)).getTime();
+    return startTime < nowTime && startTime >= oneWeekAgo;
+  })
+  .sort((a, b) => new Date(getEventStart(b)).getTime() - new Date(getEventStart(a)).getTime());
 
   const findNearby = async () => {
     try {
@@ -146,13 +158,35 @@ export const DashboardPage = () => {
             </div>
           )}
         </section>
-      ) : filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-700 p-10 text-center text-slate-400">No events found.</div>
+   ) : (search || city || category || date) ? (
+        /* 1. SEARCH MODE: Show only a flat list of results with no special headers */
+        <section>
+          <h2 className="mb-3 text-lg font-semibold text-white">Search Results ({filtered.length})</h2>
+          {filtered.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-700 p-10 text-center text-slate-400">
+              No events match your search criteria.
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((event) => (
+                <EventCard key={event.id} event={event} />
+              ))}
+            </div>
+          )}
+        </section>
       ) : (
+        /* 2. DEFAULT MODE: Show the organized sections only when NOT searching */
         <>
           <Section title="Upcoming events" items={upcoming} badge="Upcoming" />
           <Section title="Trending events" items={trending} badge="Trending" emptyText="No trending events yet." />
           <Section title="Recommended events" items={recommended} emptyText="No recommendations yet. Add more interests in your profile." />
+          {recentlyHappened.length > 0 && (
+            <Section 
+              title="Recently Happened (Last 7 Days)" 
+              items={recentlyHappened} 
+              badge="Finished" 
+            />
+          )}
         </>
       )}
     </div>
